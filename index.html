@@ -31,31 +31,38 @@
         </header>
 
         <main class="max-w-4xl mx-auto p-6 flex-1 w-full space-y-6">
+            <!-- Form -->
             <div class="bg-white p-5 rounded-2xl shadow-sm border space-y-3">
                 <h3 class="font-bold text-sm" id="formTitle">Yangi mahsulot qo'shish</h3>
                 <input type="hidden" id="editIndex" value="-1">
-                <input type="text" id="pName" placeholder="Mahsulot nomi" class="w-full border p-2.5 rounded-xl text-xs">
-                <input type="number" id="pPrice" placeholder="Narxi (so'mda)" class="w-full border p-2.5 rounded-xl text-xs">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <input type="text" id="pName" placeholder="Mahsulot nomi" class="border p-2.5 rounded-xl text-xs">
+                    <select id="pCat" class="border p-2.5 rounded-xl text-xs">
+                        <option value="fruits">Meva va sabzavot</option>
+                        <option value="dairy">Sut va tuxum</option>
+                        <option value="bakery">Non va pishiriq</option>
+                        <option value="sweets">Shirinliklar</option>
+                        <option value="meat">Go'sht va baliq</option>
+                        <option value="beverages">Ichimliklar</option>
+                    </select>
+                    <input type="number" id="pPrice" placeholder="Sotuv narxi (so'mda)" class="border p-2.5 rounded-xl text-xs">
+                    <input type="number" id="pOldPrice" placeholder="Eski narxi (Chegirma bo'lsa)" class="border p-2.5 rounded-xl text-xs">
+                </div>
                 <input type="text" id="pImg" placeholder="Rasm URL havolasi" class="w-full border p-2.5 rounded-xl text-xs">
-                <select id="pCat" class="w-full border p-2.5 rounded-xl text-xs">
-                    <option value="fruits">Meva va sabzavot</option>
-                    <option value="dairy">Sut va tuxum</option>
-                    <option value="bakery">Non va pishiriq</option>
-                    <option value="sweets">Shirinliklar</option>
-                    <option value="meat">Go'sht va baliq</option>
-                    <option value="beverages">Ichimliklar</option>
-                </select>
-                <div class="flex space-x-2">
+                
+                <div class="flex space-x-2 pt-2">
                     <button onclick="saveProduct()" id="saveBtn" class="uzum-purple text-white px-5 py-2.5 rounded-xl text-xs font-bold">Qo'shish</button>
                     <button onclick="resetForm()" id="cancelBtn" class="hidden bg-gray-200 text-gray-700 px-4 py-2.5 rounded-xl text-xs font-bold">Bekor qilish</button>
                 </div>
             </div>
 
+            <!-- Products List -->
             <div class="bg-white p-5 rounded-2xl shadow-sm border">
                 <h3 class="font-bold text-sm mb-3">Mavjud mahsulotlar</h3>
                 <div id="productList" class="space-y-2"></div>
             </div>
 
+            <!-- Orders List -->
             <div class="bg-white p-5 rounded-2xl shadow-sm border">
                 <h3 class="font-bold text-sm mb-3">Kelib tushgan buyurtmalar</h3>
                 <div id="orderList" class="space-y-3"></div>
@@ -90,24 +97,24 @@
             let id = document.getElementById('editIndex').value;
             let name = document.getElementById('pName').value;
             let price = Number(document.getElementById('pPrice').value);
+            let oldPrice = Number(document.getElementById('pOldPrice').value) || 0;
             let image = document.getElementById('pImg').value || "https://images.unsplash.com/photo-1542838132-92c53300491e?w=400";
             let category = document.getElementById('pCat').value;
             
-            if(!name || !price) return alert("Ma'lumotlarni to'ldiring!");
+            if(!name || !price) return alert("Nom va narxni kiritish majburiy!");
 
             let products = JSON.parse(localStorage.getItem('zor_products')) || [];
 
             if (id === "-1") {
-                // Yangi qo'shish
-                products.push({ id: Date.now(), name, price, category, image, hasDiscount: false });
+                products.push({ id: Date.now(), name, price, oldPrice, category, image });
                 alert("Mahsulot qo'shildi!");
             } else {
-                // O'zgartirish (Tahrirlash)
                 products[id].name = name;
                 products[id].price = price;
+                products[id].oldPrice = oldPrice;
                 products[id].category = category;
                 products[id].image = image;
-                alert("Mahsulot narxi va ma'lumotlari o'zgartirildi!");
+                alert("Mahsulot yangilandi!");
             }
 
             localStorage.setItem('zor_products', JSON.stringify(products));
@@ -121,11 +128,12 @@
             list.innerHTML = products.length === 0 ? '<p class="text-xs text-gray-400">Mahsulotlar yo‘q</p>' : '';
             
             products.forEach((p, index) => {
+                let oldPriceTxt = p.oldPrice ? `<span class="line-through text-gray-400 text-[10px] ml-1.5">${p.oldPrice.toLocaleString()} so'm</span>` : '';
                 list.innerHTML += `
                     <div class="flex justify-between items-center bg-gray-50 p-2.5 rounded-xl border text-xs">
                         <div class="flex items-center space-x-3">
                             <img src="${p.image}" class="w-10 h-10 object-cover rounded-lg">
-                            <div><b>${p.name}</b><br><span class="text-emerald-600 font-bold">${p.price.toLocaleString()} so'm</span></div>
+                            <div><b>${p.name}</b><br><span class="text-emerald-600 font-bold">${p.price.toLocaleString()} so'm</span> ${oldPriceTxt}</div>
                         </div>
                         <div class="space-x-1">
                             <button onclick="editProduct(${index})" class="bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg font-bold">O'zgartirish</button>
@@ -142,6 +150,7 @@
             document.getElementById('editIndex').value = index;
             document.getElementById('pName').value = p.name;
             document.getElementById('pPrice').value = p.price;
+            document.getElementById('pOldPrice').value = p.oldPrice || '';
             document.getElementById('pImg').value = p.image;
             document.getElementById('pCat').value = p.category;
 
@@ -154,6 +163,7 @@
             document.getElementById('editIndex').value = "-1";
             document.getElementById('pName').value = '';
             document.getElementById('pPrice').value = '';
+            document.getElementById('pOldPrice').value = '';
             document.getElementById('pImg').value = '';
             document.getElementById('formTitle').innerText = "Yangi mahsulot qo'shish";
             document.getElementById('saveBtn').innerText = "Qo'shish";
@@ -167,13 +177,47 @@
             renderProducts();
         }
 
+        function changeOrderStatus(orderId, newStatus) {
+            let orders = JSON.parse(localStorage.getItem('zor_orders')) || [];
+            let order = orders.find(o => o.id === orderId);
+            if (order) {
+                order.status = newStatus;
+                localStorage.setItem('zor_orders', JSON.stringify(orders));
+                renderOrders();
+            }
+        }
+
         function renderOrders() {
             let list = document.getElementById('orderList');
             let orders = JSON.parse(localStorage.getItem('zor_orders')) || [];
             list.innerHTML = orders.length === 0 ? '<p class="text-xs text-gray-400">Buyurtmalar yo‘q</p>' : '';
+            
             orders.forEach(o => {
                 let itemsStr = o.items.map(i => `${i.name} (${i.qty}ta)`).join(', ');
-                list.innerHTML += `<div class="bg-gray-50 p-3 rounded-xl border text-xs space-y-1"><b>Tel:</b> ${o.phone} | <b>Manzil:</b> ${o.address}<br><b>Mahsulot:</b> ${itemsStr}<br><b class="text-emerald-600">Jami: ${o.total.toLocaleString()} so'm</b> (${o.date})</div>`;
+                let currentStatus = o.status || 'Yangi';
+                
+                let badgeColor = 'bg-blue-100 text-blue-700';
+                if (currentStatus === 'Yetkazilmoqda') badgeColor = 'bg-amber-100 text-amber-700';
+                if (currentStatus === 'Bajarildi') badgeColor = 'bg-emerald-100 text-emerald-700';
+
+                list.innerHTML += `
+                    <div class="bg-gray-50 p-3.5 rounded-xl border text-xs space-y-2">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <b>Tel:</b> ${o.phone} | <b>Manzil:</b> ${o.address}<br>
+                                <span class="text-gray-500"><b>Izoh:</b> ${o.note || 'Yo\'q'}</span>
+                            </div>
+                            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${badgeColor}">${currentStatus}</span>
+                        </div>
+                        <div><b>Mahsulot:</b> ${itemsStr}</div>
+                        <div class="flex justify-between items-center pt-2 border-t">
+                            <b class="text-emerald-600">Jami: ${o.total.toLocaleString()} so'm</b>
+                            <div class="space-x-1">
+                                <button onclick="changeOrderStatus(${o.id}, 'Yetkazilmoqda')" class="bg-amber-50 text-amber-600 px-2 py-1 rounded font-bold text-[10px]">Yetkazilmoqda</button>
+                                <button onclick="changeOrderStatus(${o.id}, 'Bajarildi')" class="bg-emerald-50 text-emerald-600 px-2 py-1 rounded font-bold text-[10px]">Bajarildi</button>
+                            </div>
+                        </div>
+                    </div>`;
             });
         }
     </script>
