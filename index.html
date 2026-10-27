@@ -32,7 +32,8 @@
 
         <main class="max-w-4xl mx-auto p-6 flex-1 w-full space-y-6">
             <div class="bg-white p-5 rounded-2xl shadow-sm border space-y-3">
-                <h3 class="font-bold text-sm">Yangi mahsulot qo'shish</h3>
+                <h3 class="font-bold text-sm" id="formTitle">Yangi mahsulot qo'shish</h3>
+                <input type="hidden" id="editIndex" value="-1">
                 <input type="text" id="pName" placeholder="Mahsulot nomi" class="w-full border p-2.5 rounded-xl text-xs">
                 <input type="number" id="pPrice" placeholder="Narxi (so'mda)" class="w-full border p-2.5 rounded-xl text-xs">
                 <input type="text" id="pImg" placeholder="Rasm URL havolasi" class="w-full border p-2.5 rounded-xl text-xs">
@@ -44,7 +45,10 @@
                     <option value="meat">Go'sht va baliq</option>
                     <option value="beverages">Ichimliklar</option>
                 </select>
-                <button onclick="saveProduct()" class="uzum-purple text-white px-5 py-2.5 rounded-xl text-xs font-bold">Qo'shish</button>
+                <div class="flex space-x-2">
+                    <button onclick="saveProduct()" id="saveBtn" class="uzum-purple text-white px-5 py-2.5 rounded-xl text-xs font-bold">Qo'shish</button>
+                    <button onclick="resetForm()" id="cancelBtn" class="hidden bg-gray-200 text-gray-700 px-4 py-2.5 rounded-xl text-xs font-bold">Bekor qilish</button>
+                </div>
             </div>
 
             <div class="bg-white p-5 rounded-2xl shadow-sm border">
@@ -83,19 +87,31 @@
         }
 
         function saveProduct() {
+            let id = document.getElementById('editIndex').value;
             let name = document.getElementById('pName').value;
             let price = Number(document.getElementById('pPrice').value);
             let image = document.getElementById('pImg').value || "https://images.unsplash.com/photo-1542838132-92c53300491e?w=400";
             let category = document.getElementById('pCat').value;
+            
             if(!name || !price) return alert("Ma'lumotlarni to'ldiring!");
 
             let products = JSON.parse(localStorage.getItem('zor_products')) || [];
-            products.push({ id: Date.now(), name, price, category, image, hasDiscount: false });
+
+            if (id === "-1") {
+                // Yangi qo'shish
+                products.push({ id: Date.now(), name, price, category, image, hasDiscount: false });
+                alert("Mahsulot qo'shildi!");
+            } else {
+                // O'zgartirish (Tahrirlash)
+                products[id].name = name;
+                products[id].price = price;
+                products[id].category = category;
+                products[id].image = image;
+                alert("Mahsulot narxi va ma'lumotlari o'zgartirildi!");
+            }
+
             localStorage.setItem('zor_products', JSON.stringify(products));
-            alert("Mahsulot muvaffaqiyatli qo'shildi!");
-            document.getElementById('pName').value = ''; 
-            document.getElementById('pPrice').value = ''; 
-            document.getElementById('pImg').value = '';
+            resetForm();
             renderProducts();
         }
 
@@ -103,16 +119,45 @@
             let list = document.getElementById('productList');
             let products = JSON.parse(localStorage.getItem('zor_products')) || [];
             list.innerHTML = products.length === 0 ? '<p class="text-xs text-gray-400">Mahsulotlar yo‘q</p>' : '';
-            products.forEach(p => {
+            
+            products.forEach((p, index) => {
                 list.innerHTML += `
                     <div class="flex justify-between items-center bg-gray-50 p-2.5 rounded-xl border text-xs">
                         <div class="flex items-center space-x-3">
                             <img src="${p.image}" class="w-10 h-10 object-cover rounded-lg">
                             <div><b>${p.name}</b><br><span class="text-emerald-600 font-bold">${p.price.toLocaleString()} so'm</span></div>
                         </div>
-                        <button onclick="deleteProduct(${p.id})" class="bg-red-50 text-red-600 px-3 py-1.5 rounded-lg font-bold">O'chirish</button>
+                        <div class="space-x-1">
+                            <button onclick="editProduct(${index})" class="bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg font-bold">O'zgartirish</button>
+                            <button onclick="deleteProduct(${p.id})" class="bg-red-50 text-red-600 px-3 py-1.5 rounded-lg font-bold">O'chirish</button>
+                        </div>
                     </div>`;
             });
+        }
+
+        function editProduct(index) {
+            let products = JSON.parse(localStorage.getItem('zor_products')) || [];
+            let p = products[index];
+            
+            document.getElementById('editIndex').value = index;
+            document.getElementById('pName').value = p.name;
+            document.getElementById('pPrice').value = p.price;
+            document.getElementById('pImg').value = p.image;
+            document.getElementById('pCat').value = p.category;
+
+            document.getElementById('formTitle').innerText = "Mahsulotni tahrirlash";
+            document.getElementById('saveBtn').innerText = "Saqlash";
+            document.getElementById('cancelBtn').classList.remove('hidden');
+        }
+
+        function resetForm() {
+            document.getElementById('editIndex').value = "-1";
+            document.getElementById('pName').value = '';
+            document.getElementById('pPrice').value = '';
+            document.getElementById('pImg').value = '';
+            document.getElementById('formTitle').innerText = "Yangi mahsulot qo'shish";
+            document.getElementById('saveBtn').innerText = "Qo'shish";
+            document.getElementById('cancelBtn').classList.add('hidden');
         }
 
         function deleteProduct(id) {
