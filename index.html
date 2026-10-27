@@ -13,7 +13,7 @@
 </head>
 <body class="bg-gray-50 text-gray-800 font-sans">
 
-    <!-- Parol Oynasi -->
+    <!-- Parol Modal -->
     <div id="adminLoginModal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl text-center space-y-4">
             <h3 class="font-black text-xl">Admin Panel</h3>
@@ -23,20 +23,33 @@
         </div>
     </div>
 
-    <!-- Admin Panel Asosiy Qismi -->
+    <!-- Admin Dashboard -->
     <div id="adminDashboard" class="hidden min-h-screen flex flex-col">
         <header class="bg-white shadow-sm px-6 py-4 flex justify-between items-center border-b">
             <h1 class="text-lg font-black uzum-purple-text">Boshqaruv Paneli</h1>
-            <button onclick="localStorage.removeItem('admin_auth'); location.reload();" class="bg-red-50 text-red-600 px-4 py-2 rounded-xl text-xs font-bold">Chiqish</button>
+            <button onclick="sessionStorage.removeItem('admin_auth'); location.reload();" class="bg-red-50 text-red-600 px-4 py-2 rounded-xl text-xs font-bold">Chiqish</button>
         </header>
 
         <main class="max-w-4xl mx-auto p-6 flex-1 w-full space-y-6">
             <div class="bg-white p-5 rounded-2xl shadow-sm border space-y-3">
                 <h3 class="font-bold text-sm">Yangi mahsulot qo'shish</h3>
-                <input type="text" id="pName" placeholder="Nomi" class="w-full border p-2.5 rounded-xl text-xs">
-                <input type="number" id="pPrice" placeholder="Narxi" class="w-full border p-2.5 rounded-xl text-xs">
-                <input type="text" id="pImg" placeholder="Rasm URL" class="w-full border p-2.5 rounded-xl text-xs">
+                <input type="text" id="pName" placeholder="Mahsulot nomi" class="w-full border p-2.5 rounded-xl text-xs">
+                <input type="number" id="pPrice" placeholder="Narxi (so'mda)" class="w-full border p-2.5 rounded-xl text-xs">
+                <input type="text" id="pImg" placeholder="Rasm URL havolasi" class="w-full border p-2.5 rounded-xl text-xs">
+                <select id="pCat" class="w-full border p-2.5 rounded-xl text-xs">
+                    <option value="fruits">Meva va sabzavot</option>
+                    <option value="dairy">Sut va tuxum</option>
+                    <option value="bakery">Non va pishiriq</option>
+                    <option value="sweets">Shirinliklar</option>
+                    <option value="meat">Go'sht va baliq</option>
+                    <option value="beverages">Ichimliklar</option>
+                </select>
                 <button onclick="saveProduct()" class="uzum-purple text-white px-5 py-2.5 rounded-xl text-xs font-bold">Qo'shish</button>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl shadow-sm border">
+                <h3 class="font-bold text-sm mb-3">Mavjud mahsulotlar</h3>
+                <div id="productList" class="space-y-2"></div>
             </div>
 
             <div class="bg-white p-5 rounded-2xl shadow-sm border">
@@ -65,6 +78,7 @@
         function showDashboard() {
             document.getElementById('adminLoginModal').classList.add('hidden');
             document.getElementById('adminDashboard').classList.remove('hidden');
+            renderProducts();
             renderOrders();
         }
 
@@ -72,13 +86,40 @@
             let name = document.getElementById('pName').value;
             let price = Number(document.getElementById('pPrice').value);
             let image = document.getElementById('pImg').value || "https://images.unsplash.com/photo-1542838132-92c53300491e?w=400";
-            if(!name || !price) return alert("To'ldiring!");
+            let category = document.getElementById('pCat').value;
+            if(!name || !price) return alert("Ma'lumotlarni to'ldiring!");
 
             let products = JSON.parse(localStorage.getItem('zor_products')) || [];
-            products.push({ id: Date.now(), name, price, image });
+            products.push({ id: Date.now(), name, price, category, image, hasDiscount: false });
             localStorage.setItem('zor_products', JSON.stringify(products));
-            alert("Mahsulot qo'shildi! Xaridorlar saytida ko'rinadi.");
-            document.getElementById('pName').value = ''; document.getElementById('pPrice').value = ''; document.getElementById('pImg').value = '';
+            alert("Mahsulot muvaffaqiyatli qo'shildi!");
+            document.getElementById('pName').value = ''; 
+            document.getElementById('pPrice').value = ''; 
+            document.getElementById('pImg').value = '';
+            renderProducts();
+        }
+
+        function renderProducts() {
+            let list = document.getElementById('productList');
+            let products = JSON.parse(localStorage.getItem('zor_products')) || [];
+            list.innerHTML = products.length === 0 ? '<p class="text-xs text-gray-400">Mahsulotlar yo‘q</p>' : '';
+            products.forEach(p => {
+                list.innerHTML += `
+                    <div class="flex justify-between items-center bg-gray-50 p-2.5 rounded-xl border text-xs">
+                        <div class="flex items-center space-x-3">
+                            <img src="${p.image}" class="w-10 h-10 object-cover rounded-lg">
+                            <div><b>${p.name}</b><br><span class="text-emerald-600 font-bold">${p.price.toLocaleString()} so'm</span></div>
+                        </div>
+                        <button onclick="deleteProduct(${p.id})" class="bg-red-50 text-red-600 px-3 py-1.5 rounded-lg font-bold">O'chirish</button>
+                    </div>`;
+            });
+        }
+
+        function deleteProduct(id) {
+            let products = JSON.parse(localStorage.getItem('zor_products')) || [];
+            products = products.filter(p => p.id !== id);
+            localStorage.setItem('zor_products', JSON.stringify(products));
+            renderProducts();
         }
 
         function renderOrders() {
